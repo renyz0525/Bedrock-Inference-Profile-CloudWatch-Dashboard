@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+import 'source-map-support/register';
+import { App } from 'aws-cdk-lib';
+import { BedrockInferenceProfileDashboardStack } from '../lib/bedrock-inference-profile-dashboard-stack';
+
+const app = new App();
+
+new BedrockInferenceProfileDashboardStack(app, 'BedrockInferenceProfileDashboard', {
+  description: 'Bedrock Inference Profile CloudWatch Monitoring Dashboard',
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+});

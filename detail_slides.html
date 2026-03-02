@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bedrock Inference Profile Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0a; color: #fff; overflow: hidden; }
+
+  /* Slide container */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+  .slide { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 60px 80px; opacity: 0; visibility: hidden; transition: opacity 0.5s, transform 0.5s; transform: translateX(40px); }
+  .slide.active { opacity: 1; visibility: visible; transform: translateX(0); }
+  .slide.prev { transform: translateX(-40px); }
+
+  /* Typography */
+  h1 { font-size: 3rem; font-weight: 700; line-height: 1.2; margin-bottom: 24px; }
+  h2 { font-size: 2.2rem; font-weight: 600; line-height: 1.3; margin-bottom: 20px; }
+  h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 12px; color: #93c5fd; }
+  p, li { font-size: 1.25rem; line-height: 1.8; color: #d1d5db; }
+  ul { list-style: none; padding-left: 0; }
+  ul li { padding-left: 28px; position: relative; margin-bottom: 10px; }
+  ul li::before { content: ''; position: absolute; left: 0; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; }
+  code { background: rgba(59,130,246,0.15); color: #93c5fd; padding: 2px 8px; border-radius: 4px; font-size: 1.1rem; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .accent { color: #60a5fa; }
+  .accent-orange { color: #fb923c; }
+  .accent-green { color: #4ade80; }
+  .small { font-size: 1rem; color: #9ca3af; }
+
+  /* Layouts */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; margin-top: 16px; }
+
+  /* Cards */
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; }
+  .card h3 { margin-bottom: 12px; }
+  .card p, .card li { font-size: 1.1rem; }
+
+  /* Diagram boxes */
+  .arch-flow { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 32px 0; flex-wrap: wrap; }
+  .arch-box { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 16px 24px; text-align: center; min-width: 160px; }
+  .arch-box.orange { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(251,146,60,0.05)); border-color: rgba(251,146,60,0.3); }
+  .arch-box.green { background: linear-gradient(135deg, rgba(74,222,128,0.2), rgba(74,222,128,0.05)); border-color: rgba(74,222,128,0.3); }
+  .arch-box.purple { background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.05)); border-color: rgba(168,85,247,0.3); }
+  .arch-box .label { font-size: 0.85rem; color: #9ca3af; margin-bottom: 4px; }
+  .arch-box .name { font-size: 1.1rem; font-weight: 600; }
+  .arch-arrow { font-size: 1.5rem; color: #6b7280; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th, td { text-align: left; padding: 12px 16px; font-size: 1.05rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  th { color: #93c5fd; font-weight: 600; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { color: #d1d5db; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Navigation */
+  .nav { position: fixed; bottom: 32px; right: 40px; display: flex; gap: 12px; z-index: 100; }
+  .nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; font-size: 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .nav button:hover { background: rgba(59,130,246,0.3); border-color: rgba(59,130,246,0.5); }
+  .nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.4s; z-index: 100; }
+
+  .page-num { position: fixed; bottom: 36px; left: 40px; font-size: 0.9rem; color: #6b7280; z-index: 100; }
+
+  /* Title slide special */
+  .slide.title-slide { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%); }
+  .slide.title-slide h1 { font-size: 3.5rem; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { font-size: 1.5rem; color: #94a3b8; margin-top: 8px; }
+  .tag { display: inline-block; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; padding: 6px 16px; border-radius: 20px; font-size: 0.95rem; margin-top: 24px; margin-right: 8px; }
+
+  /* Metric card */
+  .metric-card { text-align: center; padding: 24px; }
+  .metric-card .value { font-size: 2.8rem; font-weight: 700; margin-bottom: 4px; }
+  .metric-card .label { font-size: 1rem; color: #9ca3af; }
+
+  /* Widget mock */
+  .widget-mock { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 20px; }
+  .widget-mock .widget-title { font-size: 0.85rem; color: #9ca3af; margin-bottom: 10px; font-weight: 600; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .bar-label { font-size: 0.85rem; color: #d1d5db; width: 80px; text-align: right; }
+  .bar { height: 22px; border-radius: 4px; transition: width 0.8s; }
+
+  /* Pricing flow */
+  .pricing-flow { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .pricing-step { display: flex; align-items: center; gap: 16px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+  .step-num.blue { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .step-num.orange { background: rgba(251,146,60,0.2); color: #fb923c; }
+  .step-num.gray { background: rgba(156,163,175,0.2); color: #9ca3af; }
+  .step-text { font-size: 1.1rem; color: #d1d5db; }
+  .step-text strong { color: #fff; }
+
+  @media (max-width: 900px) {
+    .slide { padding: 32px 24px; }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.6rem; }
+    p, li { font-size: 1rem; }
+    .two-col, .three-col { grid-template-columns: 1fr; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="page-num" id="pageNum"></div>
+
+<div class="deck" id="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide title-slide active">
+    <div>
+      <h1>Bedrock Inference Profile<br>Monitoring Dashboard</h1>
+      <p class="subtitle">Application Inference Profile 전용 CloudWatch 모니터링 자동화</p>
+      <div style="margin-top: 32px;">
+        <span class="tag">AWS CDK</span>
+        <span class="tag">CloudWatch</span>
+        <span class="tag">Amazon Bedrock</span>
+        <span class="tag">Auto-Discovery</span>
+      </div>
+      <p class="small" style="margin-top: 40px;">AWS CDK Construct &middot; Python Lambda &middot; Infrastructure as Code</p>
+    </div>
+  </div>
+
+  <!-- Slide 2: Problem -->
+  <div class="slide">
+    <h2>Why?</h2>
+    <p style="margin-bottom: 32px;">Bedrock Application Inference Profile을 운영할 때 겪는 문제</p>
+    <div class="two-col">
+      <div class="card">
+        <h3>가시성 부족</h3>
+        <ul>
+          <li>프로파일별 토큰 사용량 추적 어려움</li>
+          <li>Latency 분포(p50/p90/p99)를 직관적으로 확인할 수 없음</li>
+          <li>오류/쓰로틀 발생을 실시간 모니터링하기 어려움</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>비용 관리 어려움</h3>
+        <ul>
+          <li>프로파일별 토큰 비용 추정이 수동으로만 가능</li>
+          <li>누적 비용 추이를 파악하기 어려움</li>
+          <li>Input/Output 토큰 가격이 다른데 구분이 안 됨</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 24px;">
+      <h3>운영 부담</h3>
+      <ul style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px;">
+        <li>프로파일 추가/삭제 때마다 대시보드를 수동 수정</li>
+        <li>프로파일 ID, 가격 정보를 하드코딩으로 관리</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Slide 3: Solution Overview -->
+  <div class="slide">
+    <h2>Solution: <span class="accent">Automated Dashboard Construct</span></h2>
+    <p style="margin-bottom: 32px;"><code>cdk deploy</code> 한 번으로 프로파일 탐색부터 대시보드 생성까지 자동화</p>
+    <div class="three-col">
+      <div class="card metric-card">
+        <div class="value accent">Auto</div>
+        <div class="label">Profile Discovery</div>
+        <p class="small" style="margin-top: 8px;">Bedrock API로 APPLICATION 프로파일을 자동 탐색</p>
+      </div>
+      <div class="card metric-card">
+        <div class="value accent-orange">Auto</div>
+        <div class="label">Pricing Resolution</div>
+        <p class="small" style="margin-top: 8px;">AWS Price List API로 토큰 가격을 자동 조회</p>
+      </div>
+      <div class="card metric-card">
+        <div class="value accent-green">2</div>
+        <div class="label">Dashboards</div>
+        <p class="small" style="margin-top: 8px;">Detail (드롭다운 선택) + Comparison (전체 비교)</p>
+      </div>
+    </div>
+    <div style="margin-top: 32px; text-align: center;">
+      <p style="font-size: 1.1rem; color: #9ca3af;">프로파일 추가/삭제 시 <code>cdk deploy</code>만 실행하면 대시보드 자동 갱신</p>
+    </div>
+  </div>
+
+  <!-- Slide 4: Architecture -->
+  <div class="slide">
+    <h2>Architecture</h2>
+    <div class="arch-flow">
+      <div class="arch-box">
+        <div class="label">Infrastructure</div>
+        <div class="name">CDK Stack</div>
+      </div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box orange">
+        <div class="label">Compute</div>
+        <div class="name">Lambda (Python)</div>
+      </div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box green">
+        <div class="label">Monitoring</div>
+        <div class="name">CloudWatch</div>
+      </div>
+    </div>
+    <div class="arch-flow" style="margin-top: 8px;">
+      <div class="arch-box purple">
+        <div class="label">API</div>
+        <div class="name">Bedrock</div>
+        <div class="small" style="margin-top:4px;">ListInferenceProfiles</div>
+      </div>
+      <div class="arch-arrow">&rarr;</div>
+      <div class="arch-box orange">
+        <div class="label">Lambda</div>
+        <div class="name">Dashboard Builder</div>
+        <div class="small" style="margin-top:4px;">Custom Resource</div>
+      </div>
+      <div class="arch-arrow">&larr;</div>
+      <div class="arch-box purple">
+        <div class="label">API</div>
+        <div class="name">Price List</div>
+        <div class="small" style="margin-top:4px;">GetProducts</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 24px;">
+      <p style="font-size: 1.05rem; line-height: 1.7;">
+        CDK Custom Resource 패턴 사용 &mdash; CloudFormation 배포 시 Lambda가 실행되어
+        Bedrock에서 프로파일 목록을 가져오고, Price List API에서 가격을 조회한 후,
+        CloudWatch에 두 개의 대시보드를 자동 생성합니다.
+        스택 삭제 시 대시보드도 자동으로 정리됩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- Slide 5: Auto-Discovery -->
+  <div class="slide">
+    <h2>Auto-Discovery: <span class="accent">Profile & Pricing</span></h2>
+    <div class="two-col">
+      <div>
+        <h3>Profile Discovery</h3>
+        <div class="card">
+          <p style="margin-bottom: 16px;">Lambda가 배포 시점에 자동 실행:</p>
+          <ul>
+            <li><code>ListInferenceProfiles</code> API 호출</li>
+            <li><code>typeEquals: APPLICATION</code> 필터</li>
+            <li><code>status: ACTIVE</code>인 것만 수집</li>
+            <li>Pagination 지원 (100개 이상 가능)</li>
+          </ul>
+          <p class="small" style="margin-top: 16px;">CloudWatch는 프로파일의 short ID를 ModelId 차원으로 사용합니다</p>
+        </div>
+      </div>
+      <div>
+        <h3>Pricing Resolution</h3>
+        <div class="card">
+          <div class="pricing-flow">
+            <div class="pricing-step">
+              <div class="step-num blue">1</div>
+              <div class="step-text"><strong>Manual override</strong> 확인 (최우선)</div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num blue">2</div>
+              <div class="step-text"><code>GetFoundationModel</code>로 모델명 조회</div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num blue">3</div>
+              <div class="step-text"><strong>Price List API</strong>에서 on-demand 가격 조회</div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num gray">-</div>
+              <div class="step-text">미등록 모델은 비용 위젯 비활성</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Detail Dashboard -->
+  <div class="slide">
+    <h2>Detail Dashboard <span class="small">(드롭다운 선택)</span></h2>
+    <p style="margin-bottom: 24px;">CloudWatch Variable로 프로파일을 선택하면 모든 위젯이 해당 프로파일의 메트릭만 표시</p>
+    <div class="two-col">
+      <div>
+        <div class="widget-mock" style="margin-bottom: 16px;">
+          <div class="widget-title">Input / Output Token Count</div>
+          <div class="bar-row"><div class="bar-label">Input</div><div class="bar" style="width:70%; background: #1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label">Output</div><div class="bar" style="width:45%; background: #ff7f0e;"></div></div>
+        </div>
+        <div class="widget-mock">
+          <div class="widget-title">Latency Distribution</div>
+          <div class="bar-row"><div class="bar-label">Avg</div><div class="bar" style="width:40%; background: #1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label">p50</div><div class="bar" style="width:35%; background: #2ca02c;"></div></div>
+          <div class="bar-row"><div class="bar-label">p90</div><div class="bar" style="width:60%; background: #ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label">p99</div><div class="bar" style="width:85%; background: #d62728;"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="widget-mock" style="margin-bottom: 16px;">
+          <div class="widget-title">Estimated Token Cost (USD)</div>
+          <div class="bar-row"><div class="bar-label">Input</div><div class="bar" style="width:55%; background: #1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label">Output</div><div class="bar" style="width:75%; background: #ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label">Total</div><div class="bar" style="width:90%; background: #2ca02c;"></div></div>
+        </div>
+        <div class="three-col" style="gap: 8px; margin-top: 0;">
+          <div class="widget-mock"><div class="widget-title">Invocations</div><div style="font-size:1.4rem;font-weight:700;color:#60a5fa;text-align:center;">1,247</div></div>
+          <div class="widget-mock"><div class="widget-title">Avg Latency</div><div style="font-size:1.4rem;font-weight:700;color:#fb923c;text-align:center;">342ms</div></div>
+          <div class="widget-mock"><div class="widget-title">Throttles</div><div style="font-size:1.4rem;font-weight:700;color:#a78bfa;text-align:center;">0</div></div>
+        </div>
+        <div class="widget-mock" style="margin-top: 8px;">
+          <div class="widget-title">Errors & Throttles</div>
+          <div class="bar-row"><div class="bar-label">Client</div><div class="bar" style="width:15%; background: #ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label">Server</div><div class="bar" style="width:5%; background: #d62728;"></div></div>
+          <div class="bar-row"><div class="bar-label">Throttle</div><div class="bar" style="width:8%; background: #9467bd;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Comparison Dashboard -->
+  <div class="slide">
+    <h2>Comparison Dashboard <span class="small">(전체 비교)</span></h2>
+    <p style="margin-bottom: 24px;">모든 프로파일을 색상별로 구분하여 한 화면에서 비교</p>
+    <div class="two-col">
+      <div>
+        <div class="widget-mock" style="margin-bottom: 16px;">
+          <div class="widget-title">Input Token Count (by Profile)</div>
+          <div class="bar-row"><div class="bar-label" style="color:#1f77b4;">Sonnet 4</div><div class="bar" style="width:80%; background:#1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#ff7f0e;">Haiku 3.5</div><div class="bar" style="width:55%; background:#ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#2ca02c;">Haiku 4.5</div><div class="bar" style="width:65%; background:#2ca02c;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#d62728;">Nova Lite</div><div class="bar" style="width:30%; background:#d62728;"></div></div>
+        </div>
+        <div class="widget-mock">
+          <div class="widget-title">Average Latency (by Profile)</div>
+          <div class="bar-row"><div class="bar-label" style="color:#1f77b4;">Sonnet 4</div><div class="bar" style="width:90%; background:#1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#ff7f0e;">Haiku 3.5</div><div class="bar" style="width:30%; background:#ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#2ca02c;">Haiku 4.5</div><div class="bar" style="width:40%; background:#2ca02c;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#d62728;">Nova Lite</div><div class="bar" style="width:20%; background:#d62728;"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="widget-mock" style="margin-bottom: 16px;">
+          <div class="widget-title">Cost per Period (USD)</div>
+          <div class="bar-row"><div class="bar-label" style="color:#1f77b4;">Sonnet 4</div><div class="bar" style="width:85%; background:#1f77b4;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#ff7f0e;">Haiku 3.5</div><div class="bar" style="width:20%; background:#ff7f0e;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#2ca02c;">Haiku 4.5</div><div class="bar" style="width:30%; background:#2ca02c;"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#d62728;">Nova Lite</div><div class="bar" style="width:8%; background:#d62728;"></div></div>
+        </div>
+        <div class="widget-mock">
+          <div class="widget-title">Cumulative Cost (USD)</div>
+          <div class="bar-row"><div class="bar-label" style="color:#1f77b4;">Sonnet 4</div><div class="bar" style="width:75%; background:linear-gradient(90deg,#1f77b4 0%,#1f77b4 100%);"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#ff7f0e;">Haiku 3.5</div><div class="bar" style="width:35%; background:linear-gradient(90deg,#ff7f0e 0%,#ff7f0e 100%);"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#2ca02c;">Haiku 4.5</div><div class="bar" style="width:50%; background:linear-gradient(90deg,#2ca02c 0%,#2ca02c 100%);"></div></div>
+          <div class="bar-row"><div class="bar-label" style="color:#000;">Total</div><div class="bar" style="width:95%; background:linear-gradient(90deg,#6b7280 0%,#374151 100%);"></div></div>
+        </div>
+      </div>
+    </div>
+    <p class="small" style="margin-top: 16px; text-align: center;">+ 프로파일별 상세 섹션 (Token Count, Cost, Latency, Errors, Single Values)</p>
+  </div>
+
+  <!-- Slide 8: Metrics Reference -->
+  <div class="slide">
+    <h2>Monitored Metrics</h2>
+    <p style="margin-bottom: 20px;">AWS/Bedrock 네임스페이스, ModelId 차원 기준</p>
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>InputTokenCount</code></td><td>Sum</td><td>입력 토큰 수</td></tr>
+        <tr><td><code>OutputTokenCount</code></td><td>Sum</td><td>출력 토큰 수</td></tr>
+        <tr><td><code>Invocations</code></td><td>SampleCount</td><td>호출 횟수</td></tr>
+        <tr><td><code>InvocationLatency</code></td><td>Avg / p50 / p90 / p99</td><td>응답 지연 시간 (ms)</td></tr>
+        <tr><td><code>InvocationClientErrors</code></td><td>SampleCount</td><td>클라이언트 오류 (4xx)</td></tr>
+        <tr><td><code>InvocationServerErrors</code></td><td>SampleCount</td><td>서버 오류 (5xx)</td></tr>
+        <tr><td><code>InvocationThrottles</code></td><td>SampleCount</td><td>쓰로틀링 횟수</td></tr>
+        <tr><td><span class="accent-orange">Estimated Cost</span></td><td>Math Expression</td><td><code>tokens/1000 * price</code> (USD)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Slide 9: Deployment -->
+  <div class="slide">
+    <h2>Deployment</h2>
+    <div class="two-col">
+      <div>
+        <h3>Quick Start</h3>
+        <div class="card">
+          <pre style="font-family:'SF Mono','Fira Code',monospace; font-size:1rem; color:#d1d5db; line-height:2;">
+<span style="color:#6b7280;"># 1. Install</span>
+<span style="color:#4ade80;">$</span> npm install
+
+<span style="color:#6b7280;"># 2. Configure pricing (optional)</span>
+<span style="color:#6b7280;">#    lib/...-stack.ts</span>
+
+<span style="color:#6b7280;"># 3. Deploy</span>
+<span style="color:#4ade80;">$</span> npx cdk deploy
+
+<span style="color:#6b7280;"># 4. Cleanup</span>
+<span style="color:#4ade80;">$</span> npx cdk destroy</pre>
+        </div>
+      </div>
+      <div>
+        <h3>What Happens on Deploy</h3>
+        <div class="card">
+          <div class="pricing-flow">
+            <div class="pricing-step">
+              <div class="step-num blue">1</div>
+              <div class="step-text">CDK가 Lambda + Custom Resource 생성</div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num blue">2</div>
+              <div class="step-text">Lambda가 <strong>자동으로 프로파일 탐색</strong></div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num blue">3</div>
+              <div class="step-text">Price List API에서 <strong>가격 자동 조회</strong></div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num blue">4</div>
+              <div class="step-text">CloudWatch에 <strong>2개 대시보드 생성</strong></div>
+            </div>
+            <div class="pricing-step">
+              <div class="step-num orange">!</div>
+              <div class="step-text">프로파일 변경 시 <code>cdk deploy</code>만 재실행</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: Summary -->
+  <div class="slide title-slide">
+    <div>
+      <h2>Summary</h2>
+      <div class="two-col" style="margin-top: 32px;">
+        <div>
+          <ul style="font-size: 1.3rem;">
+            <li>Inference Profile <strong class="accent">자동 탐색</strong></li>
+            <li>토큰 가격 <strong class="accent-orange">자동 조회</strong></li>
+            <li>2개 대시보드 <strong class="accent-green">자동 생성</strong></li>
+            <li>토큰 사용량 / 비용 / Latency / 오류 모니터링</li>
+            <li>CDK로 IaC 관리, 스택 삭제 시 자동 정리</li>
+          </ul>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+          <p style="font-size: 1.3rem; text-align: center; line-height: 2;">
+            <code>npm install</code><br>
+            <code>npx cdk deploy</code><br>
+            <span class="small" style="font-size: 1.1rem;">That's it.</span>
+          </p>
+        </div>
+      </div>
+      <div style="margin-top: 48px;">
+        <span class="tag">CDK Construct</span>
+        <span class="tag">Lambda Custom Resource</span>
+        <span class="tag">CloudWatch Dashboard</span>
+        <span class="tag">Price List API</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="go(-1)">&#8592;</button>
+  <button id="nextBtn" onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(idx) {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'prev');
+      if (i === idx) s.classList.add('active');
+      else if (i < idx) s.classList.add('prev');
+    });
+    current = idx;
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').disabled = idx === slides.length - 1;
+    document.getElementById('progress').style.width = ((idx + 1) / slides.length * 100) + '%';
+    document.getElementById('pageNum').textContent = (idx + 1) + ' / ' + slides.length;
+  }
+
+  function go(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < slides.length) show(next);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) go(diff > 0 ? 1 : -1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>

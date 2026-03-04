@@ -25,19 +25,19 @@ import json
 # ──────────────────────────────────────────────
 PROFILES = {
     "deptA_penguin_dev": {
-        "arn": "arn:aws:bedrock:us-east-1:xxxxxxxxxxxxxx:application-inference-profile/w2m9jvmdyfej",
+        "arn": "arn:aws:bedrock:us-east-1:562082723483:application-inference-profile/w2m9jvmdyfej",
         "description": "DepartmentA Penguin Project Development",
     },
     "deptA_penguin_prod": {
-        "arn": "arn:aws:bedrock:us-east-1:xxxxxxxxxxxxxx:application-inference-profile/7r61afh3dz6i",
+        "arn": "arn:aws:bedrock:us-east-1:562082723483:application-inference-profile/7r61afh3dz6i",
         "description": "DepartmentA Penguin Project Production",
     },
     "deptB_general": {
-        "arn": "arn:aws:bedrock:us-east-1:xxxxxxxxxxxxxx:application-inference-profile/nfi4dck22hn0",
+        "arn": "arn:aws:bedrock:us-east-1:562082723483:application-inference-profile/nfi4dck22hn0",
         "description": "DepartmentB General Usage",
     },
     "my_team_prod": {
-        "arn": "arn:aws:bedrock:us-east-1:xxxxxxxxxxxxxx:application-inference-profile/sx2q08488787",
+        "arn": "arn:aws:bedrock:us-east-1:562082723483:application-inference-profile/sx2q08488787",
         "description": "My Team Production (Sonnet 4.6, Cross-Region)",
     },
 }

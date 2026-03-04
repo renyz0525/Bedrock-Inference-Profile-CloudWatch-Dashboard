@@ -175,6 +175,29 @@ def build_detail_dashboard(profiles, period, region, pricing, detail_name, comp_
                      [['AWS/Bedrock', metric_name, 'ModelId', '$inferenceProfile']]))
     y += 4
 
+    # Token & Cost single values
+    w.append(sv(0, y, 8, 4, 'Input Tokens', region, period, 'Sum',
+                [['AWS/Bedrock', 'InputTokenCount', 'ModelId', '$inferenceProfile']]))
+    w.append(sv(8, y, 8, 4, 'Output Tokens', region, period, 'Sum',
+                [['AWS/Bedrock', 'OutputTokenCount', 'ModelId', '$inferenceProfile']]))
+    if has_cost:
+        priced_for_sv = [p for p in profiles if get_price(p, pricing)]
+        avg_in_sv = sum(pricing.get(p['id'], {}).get('inputTokenPrice', 0) for p in priced_for_sv) / len(priced_for_sv)
+        avg_out_sv = sum(pricing.get(p['id'], {}).get('outputTokenPrice', 0) for p in priced_for_sv) / len(priced_for_sv)
+        w.append({
+            'type': 'metric', 'x': 16, 'y': y, 'width': 8, 'height': 4,
+            'properties': {
+                'title': 'Est. Cost (USD)', 'view': 'singleValue', 'region': region, 'period': period,
+                'setPeriodToTimeRange': True,
+                'metrics': [
+                    ['AWS/Bedrock', 'InputTokenCount', 'ModelId', '$inferenceProfile', {'id': 'svI', 'stat': 'Sum', 'visible': False}],
+                    ['AWS/Bedrock', 'OutputTokenCount', 'ModelId', '$inferenceProfile', {'id': 'svO', 'stat': 'Sum', 'visible': False}],
+                    [{'expression': f'svI/1000*{avg_in_sv}+svO/1000*{avg_out_sv}', 'label': 'Est. Cost', 'id': 'svC'}],
+                ],
+            },
+        })
+    y += 4
+
     # Latency distribution
     w.append({
         'type': 'metric', 'x': 0, 'y': y, 'width': 12, 'height': 6,
@@ -376,6 +399,28 @@ def profile_section(w, p, start_y, period, region, pricing):
                      [['AWS/Bedrock', metric_name, 'ModelId', pid]]))
     y += 3
 
+    # Token & Cost single values
+    w.append(sv(0, y, 8, 3, 'Input Tokens', region, period, 'Sum',
+                [['AWS/Bedrock', 'InputTokenCount', 'ModelId', pid]]))
+    w.append(sv(8, y, 8, 3, 'Output Tokens', region, period, 'Sum',
+                [['AWS/Bedrock', 'OutputTokenCount', 'ModelId', pid]]))
+    if pr:
+        ip_sv, op_sv = pr
+        s_sv = f"sv{pid[-5:]}"
+        w.append({
+            'type': 'metric', 'x': 16, 'y': y, 'width': 8, 'height': 3,
+            'properties': {
+                'title': 'Est. Cost (USD)', 'view': 'singleValue', 'region': region, 'period': period,
+                'setPeriodToTimeRange': True,
+                'metrics': [
+                    ['AWS/Bedrock', 'InputTokenCount', 'ModelId', pid, {'id': f'{s_sv}I', 'stat': 'Sum', 'visible': False}],
+                    ['AWS/Bedrock', 'OutputTokenCount', 'ModelId', pid, {'id': f'{s_sv}O', 'stat': 'Sum', 'visible': False}],
+                    [{'expression': f'{s_sv}I/1000*{ip_sv}+{s_sv}O/1000*{op_sv}', 'label': 'Est. Cost', 'id': f'{s_sv}C'}],
+                ],
+            },
+        })
+    y += 3
+
     return y
 
 
@@ -493,7 +538,8 @@ def txt(x, y, w, h, md):
 def sv(x, y, w, h, title, region, period, stat, metrics):
     return {'type': 'metric', 'x': x, 'y': y, 'width': w, 'height': h,
             'properties': {'title': title, 'view': 'singleValue', 'region': region,
-                           'period': period, 'stat': stat, 'metrics': metrics}}
+                           'period': period, 'stat': stat, 'metrics': metrics,
+                           'setPeriodToTimeRange': True}}
 
 def ts_all(x, y, w, h, title, profiles, metric_name, stat, region, period, yAxis=None):
     widget = {

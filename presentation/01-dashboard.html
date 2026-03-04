@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedrock Inference Profile 모니터링 대시보드</title>
+  <link rel="stylesheet" href="./common/theme.css">
+  <style>
+    .callout { background: rgba(255,153,0,0.12); border-left: 3px solid #FF9900; padding: 12px 16px; border-radius: 6px; margin: 12px 0; font-size: 0.9rem; }
+    .callout strong { color: #FF9900; }
+    .ascii-box { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 14px 18px; font-family: 'Courier New', monospace; font-size: 0.78rem; line-height: 1.5; white-space: pre; color: rgba(255,255,255,0.85); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { background: rgba(255,153,0,0.15); color: #FF9900; padding: 8px 12px; text-align: left; border-bottom: 2px solid rgba(255,153,0,0.3); }
+    td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .metric-highlight { display: inline-block; background: rgba(255,153,0,0.15); color: #FF9900; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
+    .print-btn { position: fixed; top: 10px; right: 10px; z-index: 9999; padding: 6px 16px; background: rgba(255,153,0,0.9); color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; opacity: 0.7; transition: opacity 0.2s; }
+    .print-btn:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">PDF Export</button>
+<div class="slide-deck">
+
+<!-- Slide 1: Session Cover -->
+<div class="slide" style="background:linear-gradient(135deg, #1a1f35 0%, #0d1117 50%, #161b2e 100%); padding:0; overflow:hidden; position:relative;">
+  <div style="position:absolute; top:-20%; right:-10%; width:60%; height:80%; background:radial-gradient(ellipse, rgba(255,153,0,0.1) 0%, transparent 70%); pointer-events:none;"></div>
+  <div style="position:absolute; left:5%; top:42%; width:80px; height:3px; background:linear-gradient(90deg, #FF9900, #FFB84D); border-radius:2px;"></div>
+  <h1 style="position:absolute; left:5%; top:45%; font-size:2.6rem; color:#fff; font-weight:300; line-height:1.25; width:65%; margin:0;">Bedrock Inference Profile<br>모니터링 대시보드</h1>
+  <p style="position:absolute; left:5%; top:63%; font-size:1.2rem; color:rgba(255,255,255,0.7); width:60%; margin:0;">팀별 AI 사용량 추적 및 비용 관리 자동화 솔루션</p>
+  <div style="position:absolute; left:5%; top:78%;">
+    <p style="font-size:1.05rem; color:#fff; font-weight:600; margin:0;">렌</p>
+    <p style="font-size:0.9rem; color:rgba(255,255,255,0.6); margin:6px 0 0 0;">Solutions Architect, AWS</p>
+  </div>
+</div>
+
+<!-- Slide 2: 목차 -->
+<div class="slide">
+  <div class="slide-header"><h2>목차</h2></div>
+  <div class="slide-body">
+    <ol style="font-size:1.1rem; line-height:2.2; list-style:none; padding:0; counter-reset:toc;">
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">1</span>Inference Profile이란?</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">2</span>왜 이 솔루션이 필요한가?</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">3</span>전체 아키텍처</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">4</span>대시보드 구성</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">5</span>모니터링 지표 상세</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">6</span>코드 작성 가이드</li>
+      <li class="fragment fade-in" style="counter-increment:toc; padding:6px 0;"><span style="display:inline-block; width:28px; height:28px; background:rgba(255,153,0,0.2); color:#FF9900; border-radius:50%; text-align:center; line-height:28px; font-size:0.85rem; font-weight:600; margin-right:12px;">7</span>배포 및 운영</li>
+    </ol>
+  </div>
+</div>
+
+<!-- Slide 3: Inference Profile이란? -->
+<div class="slide">
+  <div class="slide-header"><h2>Bedrock Inference Profile이란?</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>Application Inference Profile</h3>
+        <ul>
+          <li class="fragment fade-in">Bedrock Foundation Model에 대한 <strong>프록시 역할</strong></li>
+          <li class="fragment fade-in">팀/프로젝트/환경별 <strong>별도 프로파일</strong> 생성</li>
+          <li class="fragment fade-in">CloudWatch <span class="metric-highlight">ModelId</span> 차원으로 <strong>개별 추적</strong></li>
+          <li class="fragment fade-in">동일 모델, 서로 다른 메트릭 수집</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>핵심 개념</h3>
+        <div class="ascii-box">Team A ──→ Profile A ──┐
+                       ├──→ Claude Sonnet 4.6
+Team B ──→ Profile B ──┘
+
+CloudWatch:
+  ModelId = "<span style="color:#FF9900">Profile A ID</span>" → Team A 메트릭
+  ModelId = "<span style="color:#2CA02C">Profile B ID</span>" → Team B 메트릭</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 4: Profile 유형 -->
+<div class="slide">
+  <div class="slide-header"><h2>Inference Profile 유형</h2></div>
+  <div class="slide-body">
+    <div class="compare-toggle">
+      <button class="compare-btn active" data-compare="single">단일 리전 (Single-Region)</button>
+      <button class="compare-btn" data-compare="cross">크로스 리전 (Cross-Region)</button>
+    </div>
+    <div class="compare-content active" data-compare="single">
+      <ul>
+        <li>Foundation Model ARN <strong>직접 지정</strong></li>
+        <li><strong>해당 리전에서만</strong> 추론 가능</li>
+        <li>용도: <strong>개발/테스트</strong> 환경</li>
+      </ul>
+      <div class="code-block"><span class="comment"># 모델 소스 (단일 리전)</span>
+arn:aws:bedrock:<span class="value">us-east-1</span>::foundation-model/<span class="string">anthropic.claude-sonnet-4-6</span></div>
+    </div>
+    <div class="compare-content" data-compare="cross">
+      <ul>
+        <li>System-defined Inference Profile ARN 지정</li>
+        <li><strong>여러 리전에 자동 라우팅</strong> (처리량/복원력 향상)</li>
+        <li>용도: <strong>프로덕션</strong> 환경 (권장)</li>
+      </ul>
+      <div class="code-block"><span class="comment"># 모델 소스 (크로스 리전)</span>
+arn:aws:bedrock:<span class="value">us-east-1</span>:<span class="value">ACCOUNT</span>:inference-profile/<span class="string">us.anthropic.claude-sonnet-4-6</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: 왜 필요한가 -->
+<div class="slide">
+  <div class="slide-header"><h2>왜 이 솔루션이 필요한가?</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3 style="color:#d62728;">문제점</h3>
+        <ul>
+          <li class="fragment fade-in">여러 팀이 같은 모델 사용 시 <strong>사용량 파악 불가</strong></li>
+          <li class="fragment fade-in"><strong>비용 분배</strong>가 어려움</li>
+          <li class="fragment fade-in">성능 이슈의 <strong>원인 팀 추적 불가</strong></li>
+          <li class="fragment fade-in">수동 대시보드 구성은 번거롭고 오류 발생</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 style="color:#2CA02C;">해결</h3>
+        <ul>
+          <li class="fragment fade-in">Inference Profile로 <strong>팀별 사용량 분리</strong></li>
+          <li class="fragment fade-in"><strong>자동 비용 추정</strong> (Price List API 연동)</li>
+          <li class="fragment fade-in"><strong>실시간 성능 모니터링</strong> (레이턴시, 에러, 스로틀)</li>
+          <li class="fragment fade-in"><strong>CDK 배포 한 번</strong>으로 전체 자동화</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 6: 전체 아키텍처 (Canvas) -->
+<div class="slide">
+  <div class="slide-header"><h2>전체 아키텍처</h2></div>
+  <div class="slide-body">
+    <div class="canvas-container" style="flex:1">
+      <canvas id="arch-canvas"></canvas>
+      <img id="arch-print-img" style="display:none; width:100%; height:100%; object-fit:contain;" alt="Architecture Diagram">
+    </div>
+    <div class="btn-group" style="justify-content:center; margin-top:8px">
+      <button class="btn btn-primary" onclick="archAnim.play()">Play</button>
+      <button class="btn" onclick="archAnim.reset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: 배포 흐름 -->
+<div class="slide" id="slide-deploy">
+  <div class="slide-header"><h2>배포 흐름</h2></div>
+  <div class="slide-body">
+    <div class="timeline" id="deploy-timeline">
+      <div class="timeline-step">
+        <div class="timeline-dot">1</div>
+        <div class="timeline-label"><strong>CDK Deploy</strong><br><code>npx cdk deploy</code></div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">2</div>
+        <div class="timeline-label"><strong>CloudFormation</strong><br>인프라 프로비저닝</div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">3</div>
+        <div class="timeline-label"><strong>Lambda 실행</strong><br>Custom Resource 트리거</div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">4</div>
+        <div class="timeline-label"><strong>프로파일 발견</strong><br>APPLICATION 자동 발견</div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">5</div>
+        <div class="timeline-label"><strong>가격 조회</strong><br>Price List API</div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">6</div>
+        <div class="timeline-label"><strong>대시보드 생성</strong><br>Detail + Comparison</div>
+      </div>
+      <div class="timeline-connector"></div>
+      <div class="timeline-step">
+        <div class="timeline-dot">7</div>
+        <div class="timeline-label"><strong>완료</strong><br>대시보드 URL 출력</div>
+      </div>
+    </div>
+    <div class="btn-group" style="justify-content:center; margin-top:16px">
+      <button class="btn btn-primary" onclick="deployTimeline.play()">Play</button>
+      <button class="btn" onclick="deployTimeline.reset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: Detail Dashboard -->
+<div class="slide">
+  <div class="slide-header"><h2>Detail Dashboard</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>주요 위젯</h3>
+        <ul>
+          <li class="fragment fade-in"><strong>드롭다운 선택기</strong> — 프로파일별 필터링 (Dashboard Variable)</li>
+          <li class="fragment fade-in"><strong>토큰 사용량</strong> — Input/Output 이중 Y축</li>
+          <li class="fragment fade-in"><strong>비용 추정</strong> — Input/Output/Total (Stacked Area)</li>
+          <li class="fragment fade-in"><strong>핵심 카드</strong> — Invocations, Avg/Min/Max Latency, Errors, Throttles</li>
+          <li class="fragment fade-in"><strong>레이턴시 분포</strong> — Avg, p50, p90, p99</li>
+          <li class="fragment fade-in"><strong>에러 & 스로틀</strong> — Client/Server Errors, Throttles</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Dashboard Variable</h3>
+        <div class="ascii-box">┌─ Select Profile ──────────┐
+│ <span style="color:#FF9900">▼ deptA_penguin_dev</span>       │
+│   deptA_penguin_prod      │
+│   deptB_general           │
+│   my_team_prod            │
+└───────────────────────────┘
+
+→ 선택한 프로파일의 메트릭만 표시
+→ <span class="metric-highlight">$inferenceProfile</span> 변수 활용</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 9: Comparison Dashboard -->
+<div class="slide">
+  <div class="slide-header"><h2>Comparison Dashboard</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>전체 프로파일 비교</h3>
+        <ul>
+          <li class="fragment fade-in"><strong>컬러 코딩</strong> — 10가지 색상 자동 순환</li>
+          <li class="fragment fade-in"><strong>토큰 소비량</strong> — 전체 프로파일 Input/Output 비교</li>
+          <li class="fragment fade-in"><strong>성능 비교</strong> — Invocation Count, Average Latency</li>
+          <li class="fragment fade-in"><strong>비용 추정</strong> — Period별 비용 + <strong>누적 비용</strong></li>
+          <li class="fragment fade-in"><strong>프로파일별 섹션</strong> — 개별 상세 메트릭</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>누적 비용 (RUNNING_SUM)</h3>
+        <div class="ascii-box">Cumulative Cost (USD)
+│      <span style="color:#000">╱</span>── <span style="color:#7f7f7f">Total</span>
+│    <span style="color:#1f77b4">╱╱</span> ── <span style="color:#1f77b4">Team A</span>
+│  <span style="color:#ff7f0e">╱╱╱</span>  ── <span style="color:#ff7f0e">Team B</span>
+│<span style="color:#2ca02c">╱╱╱╱</span>   ── <span style="color:#2ca02c">Team C</span>
+└──────────────── time</div>
+        <div class="callout" style="margin-top:10px">
+          <strong>RUNNING_SUM()</strong> CloudWatch 함수로 시간 경과에 따른 누적 비용 시각화
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 10: 모니터링 지표 상세 (통합) -->
+<div class="slide">
+  <div class="slide-header"><h2>모니터링 지표 상세</h2></div>
+  <div class="slide-body">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="m-token">토큰 & 호출</button>
+      <button class="tab-btn" data-tab="m-lat">레이턴시</button>
+      <button class="tab-btn" data-tab="m-err">에러 & 스로틀</button>
+    </div>
+    <div class="tab-content active" data-tab="m-token">
+      <table>
+        <thead><tr><th>지표</th><th>설명</th><th>통계</th><th>용도</th></tr></thead>
+        <tbody>
+          <tr><td><span class="metric-highlight">InputTokenCount</span></td><td>입력 토큰 수</td><td>Sum</td><td>프롬프트 크기 추적</td></tr>
+          <tr><td><span class="metric-highlight">OutputTokenCount</span></td><td>출력 토큰 수</td><td>Sum</td><td>응답 크기 추적</td></tr>
+          <tr><td><span class="metric-highlight">Invocations</span></td><td>API 호출 수</td><td>SampleCount</td><td>사용 빈도 파악</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:12px">모든 지표는 <strong>AWS/Bedrock</strong> 네임스페이스, <strong>ModelId</strong> 차원으로 수집됩니다</div>
+    </div>
+    <div class="tab-content" data-tab="m-lat">
+      <table>
+        <thead><tr><th>지표</th><th>통계</th><th>설명</th><th>활용</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="5"><span class="metric-highlight">InvocationLatency</span></td><td>Average</td><td>평균 응답 시간</td><td>전반적 성능 파악</td></tr>
+          <tr><td>p50</td><td>50%ile (중앙값)</td><td>일반적 사용자 경험</td></tr>
+          <tr><td>p90</td><td>90%ile</td><td>대부분의 요청 시간</td></tr>
+          <tr><td><strong>p99</strong></td><td>99%ile</td><td>꼬리 지연 시간 (Tail Latency)</td></tr>
+          <tr><td>Min / Max</td><td>최소/최대</td><td>이상치 탐지</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:12px"><strong>p90과 p99가 중요한 이유:</strong> Average만으로는 일부 사용자의 느린 경험을 놓칠 수 있습니다</div>
+    </div>
+    <div class="tab-content" data-tab="m-err">
+      <table>
+        <thead><tr><th>지표</th><th>HTTP</th><th>의미</th><th>대응</th></tr></thead>
+        <tbody>
+          <tr><td><span class="metric-highlight">InvocationClientErrors</span></td><td>4xx</td><td>잘못된 요청, 권한 문제</td><td>요청 형식 / IAM 확인</td></tr>
+          <tr><td><span class="metric-highlight">InvocationServerErrors</span></td><td>5xx</td><td>AWS 내부 에러</td><td>재시도 로직 구현</td></tr>
+          <tr><td><span class="metric-highlight">InvocationThrottles</span></td><td>429</td><td>요율 제한 초과</td><td><strong>용량 확보 필요</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:12px"><strong>스로틀이 빈번하다면</strong> → Provisioned Throughput 또는 Cross-Region 프로파일 전환을 고려하세요</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 11: 비용 계산 -->
+<div class="slide">
+  <div class="slide-header"><h2>비용 추정 메커니즘</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>비용 계산식</h3>
+        <div class="code-block"><span class="key">Cost</span> = (<span class="value">InputTokens</span> / 1000 × <span class="string">InputPrice</span>)
+     + (<span class="value">OutputTokens</span> / 1000 × <span class="string">OutputPrice</span>)
+
+<span class="comment"># 누적 비용</span>
+<span class="key">Cumulative</span> = <span class="string">RUNNING_SUM</span>(cost_per_period)</div>
+        <div class="callout" style="margin-top:12px">CloudWatch <strong>Metric Math</strong>를 활용하여 실시간 비용을 계산합니다</div>
+      </div>
+      <div class="col">
+        <h3>가격 조회 우선순위</h3>
+        <ol>
+          <li class="fragment fade-in"><strong style="color:#FF9900">수동 오버라이드</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">CDK Stack에 설정 (최신 모델용)</span></li>
+          <li class="fragment fade-in"><strong style="color:#FF9900">AWS Price List API</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">ServiceCode=AmazonBedrock 자동 조회</span></li>
+          <li class="fragment fade-in"><strong style="color:#FF9900">미적용</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">가격 없음 → 비용 위젯 미표시</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 12: Profile 생성 코드 -->
+<div class="slide">
+  <div class="slide-header"><h2>코드 가이드 - Profile 생성</h2></div>
+  <div class="slide-body">
+    <div class="code-block"><span class="code-label">create_profile.py</span><span class="keyword">import</span> boto3
+
+client = boto3.client(<span class="string">"bedrock"</span>, region_name=<span class="string">"us-east-1"</span>)
+
+<span class="comment"># 단일 리전 프로파일 생성</span>
+response = client.create_inference_profile(
+    inferenceProfileName=<span class="string">"deptA_penguin_dev"</span>,
+    description=<span class="string">"DepartmentA Penguin Project Dev"</span>,
+    modelSource={
+        <span class="string">"copyFrom"</span>: <span class="string">"arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-6"</span>
+    },
+)
+print(<span class="string">f"ARN: {response['inferenceProfileArn']}"</span>)</div>
+    <p style="font-size:0.9rem; margin-top:12px;">CLI 도구도 제공:</p>
+    <div class="code-block"><span class="code-label">bash</span><span class="comment"># 단일 리전</span>
+python3 create_profile.py --name my_team_dev
+
+<span class="comment"># 크로스 리전 (프로덕션 권장)</span>
+python3 create_profile.py --name my_team_prod --cross-region</div>
+  </div>
+</div>
+
+<!-- Slide 13: Profile 호출 코드 (핵심!) -->
+<div class="slide">
+  <div class="slide-header"><h2>코드 가이드 - Profile 호출 (핵심!)</h2></div>
+  <div class="slide-body">
+    <div class="code-block"><span class="code-label">invoke_profile.py</span><span class="keyword">import</span> boto3, json
+
+client = boto3.client(<span class="string">"bedrock-runtime"</span>, region_name=<span class="string">"us-east-1"</span>)
+
+<span class="comment"># <span style="color:#2CA02C">&#10003;</span> Inference Profile ARN을 modelId로 사용</span>
+PROFILE_ARN = <span class="string">"arn:aws:bedrock:us-east-1:ACCOUNT:application-inference-profile/w2m9jvmdyfej"</span>
+
+response = client.invoke_model(
+    modelId=<span style="color:#FF9900; font-weight:bold">PROFILE_ARN</span>,   <span class="comment"># ← Profile ARN 사용!</span>
+    contentType=<span class="string">"application/json"</span>,
+    accept=<span class="string">"application/json"</span>,
+    body=json.dumps({
+        <span class="string">"anthropic_version"</span>: <span class="string">"bedrock-2023-05-31"</span>,
+        <span class="string">"max_tokens"</span>: 256,
+        <span class="string">"messages"</span>: [{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"Hello!"</span>}],
+    }),
+)</div>
+    <div class="callout" style="margin-top:10px">
+      <strong>modelId에 반드시 Inference Profile ARN을 사용해야 합니다!</strong><br>
+      Foundation Model ID를 직접 사용하면 팀별 구분이 불가합니다. 스트리밍도 동일: <code>invoke_model_with_response_stream()</code>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 14: CDK 배포 -->
+<div class="slide">
+  <div class="slide-header"><h2>코드 가이드 - CDK 배포</h2></div>
+  <div class="slide-body">
+    <div class="code-block"><span class="code-label">bedrock-inference-profile-dashboard-stack.ts</span><span class="keyword">import</span> { BedrockInferenceProfileDashboard, PricingConfig } <span class="keyword">from</span> <span class="string">'./bedrock-inference-profile-dashboard'</span>;
+
+<span class="comment">// 가격 오버라이드 (Price List API에 없는 최신 모델용)</span>
+<span class="keyword">const</span> pricing: PricingConfig = {
+  <span class="string">'w2m9jvmdyfej'</span>: { inputTokenPrice: <span class="value">0.00025</span>, outputTokenPrice: <span class="value">0.00125</span> },  <span class="comment">// Claude 3 Haiku</span>
+  <span class="string">'24ug7jehtrvr'</span>: { inputTokenPrice: <span class="value">0.003</span>,   outputTokenPrice: <span class="value">0.015</span>   },  <span class="comment">// Claude Sonnet 4.6</span>
+};
+
+<span class="keyword">new</span> BedrockInferenceProfileDashboard(<span class="keyword">this</span>, <span class="string">'Dashboard'</span>, {
+  dashboardName: <span class="string">'BedrockInferenceProfileDashboard'</span>,
+  period: Duration.minutes(<span class="value">5</span>),
+  pricing,
+});</div>
+    <div class="code-block" style="margin-top:10px"><span class="code-label">terminal</span>$ npx cdk deploy
+
+<span class="comment"># Stack Outputs:</span>
+<span class="key">DetailDashboardUrl</span>     = https://us-east-1.console.aws.amazon.com/cloudwatch/...
+<span class="key">ComparisonDashboardUrl</span> = https://us-east-1.console.aws.amazon.com/cloudwatch/...
+<span class="key">ProfileCount</span>           = 4</div>
+  </div>
+</div>
+
+<!-- Slide 15: 가격 자동 조회 -->
+<div class="slide">
+  <div class="slide-header"><h2>가격 자동 조회 메커니즘</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>조회 우선순위</h3>
+        <ol>
+          <li class="fragment fade-in"><strong style="color:#FF9900">수동 오버라이드</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">CDK Stack에 설정된 가격 (최신 모델용)</span></li>
+          <li class="fragment fade-in"><strong style="color:#FF9900">AWS Price List API</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">ServiceCode=AmazonBedrock, Feature=On-demand Inference</span></li>
+          <li class="fragment fade-in"><strong style="color:#FF9900">미적용</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">가격 정보 없음 → 비용 위젯 미표시</span></li>
+        </ol>
+      </div>
+      <div class="col">
+        <h3>최적화</h3>
+        <ul>
+          <li class="fragment fade-in"><strong>모델명 기반 캐싱</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">같은 모델 사용하는 프로파일은 1회만 조회</span></li>
+          <li class="fragment fade-in"><strong>17개 리전 지원</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">US, EU, AP, SA, ME 전체</span></li>
+          <li class="fragment fade-in"><strong>배포 시마다 갱신</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">cdk deploy 실행 시 최신 가격 반영</span></li>
+          <li class="fragment fade-in"><strong>Foundation Model 이름 자동 해석</strong><br><span style="font-size:0.85rem; color:var(--text-secondary)">GetFoundationModel API → 모델 이름 변환</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 16: 주의사항 -->
+<div class="slide">
+  <div class="slide-header"><h2>주의사항 & 제약</h2></div>
+  <div class="slide-body">
+    <ul style="font-size:0.95rem; line-height:1.8;">
+      <li class="fragment fade-in"><strong>Dashboard Variable 제약</strong><br><span style="color:var(--text-secondary)">필터링/비필터링 위젯 혼합 불가 → Detail/Comparison 분리 이유</span></li>
+      <li class="fragment fade-in"><strong>Price List API 제약</strong><br><span style="color:var(--text-secondary)">최신 모델(Claude Sonnet 4, Haiku 4.5 등) 미등록 가능 → 수동 오버라이드 필요</span></li>
+      <li class="fragment fade-in"><strong>메트릭 지연</strong><br><span style="color:var(--text-secondary)">CloudWatch 메트릭은 호출 후 5-10분 후 표시</span></li>
+      <li class="fragment fade-in" style="color:#FF9900;"><strong>프로파일 ARN 필수</strong><br><span style="color:var(--text-secondary)">기존 모델 ID로 호출하면 프로파일별 추적 불가 — 반드시 변경 필요!</span></li>
+      <li class="fragment fade-in"><strong>배포 시 갱신</strong><br><span style="color:var(--text-secondary)">프로파일 추가/삭제 시 <code>cdk deploy</code> 재실행 필요</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Slide 17: Key Takeaways -->
+<div class="slide">
+  <div class="slide-header"><h2>Key Takeaways</h2></div>
+  <div class="slide-body">
+    <div class="columns">
+      <div class="col">
+        <h3>핵심 요약</h3>
+        <ul>
+          <li class="fragment fade-in"><strong>Inference Profile</strong> = 팀별 AI 사용량 분리의 핵심</li>
+          <li class="fragment fade-in"><strong>자동 발견</strong> + 자동 가격 조회 + 자동 대시보드</li>
+          <li class="fragment fade-in"><strong>Detail</strong> 대시보드 → 프로파일별 심층 분석</li>
+          <li class="fragment fade-in"><strong>Comparison</strong> 대시보드 → 전체 비교 + 누적 비용</li>
+          <li class="fragment fade-in"><strong>CDK 배포 한 번</strong>으로 모든 것이 자동화</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>다음 단계</h3>
+        <ol>
+          <li class="fragment fade-in">팀별 Inference Profile 생성</li>
+          <li class="fragment fade-in">기존 코드의 <code>modelId</code>를 Profile ARN으로 변경</li>
+          <li class="fragment fade-in"><code>npx cdk deploy</code> → 대시보드 자동 생성</li>
+          <li class="fragment fade-in">정기 배포로 새 프로파일 자동 반영</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 18: Thank You -->
+<div class="slide">
+  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:24px; text-align:center;">
+    <h1 style="font-size:3rem; background:linear-gradient(135deg, #FFB84D, #FF9900); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Thank You</h1>
+    <p style="color:var(--text-secondary); font-size:1.1rem;">Bedrock Inference Profile 모니터링 대시보드</p>
+    <p style="color:var(--text-muted); font-size:1rem; margin-top:8px;">질문이 있으시면 말씀해주세요!</p>
+    <div style="display:flex; gap:16px; margin-top:20px;">
+      <a href="index.html" class="btn btn-primary btn-sm" style="text-decoration:none;">← 목차로 돌아가기</a>
+    </div>
+  </div>
+</div>
+
+</div><!-- end slide-deck -->
+
+<script src="./common/animation-utils.js"></script>
+<script src="./common/slide-framework.js"></script>
+<script src="./common/quiz-component.js"></script>
+<script src="./common/presenter-view.js"></script>
+
+<!-- Architecture Canvas Animation -->
+<script>
+(function() {
+  const canvas = document.getElementById('arch-canvas');
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const BASE_W = 960, BASE_H = 480;
+  let currentStep = 0;
+  const MAX_STEP = 5;
+
+  function resizeCanvas() {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    if (cw <= 0 || ch <= 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    const scale = cw / BASE_W;
+    const scaledH = Math.min(Math.round(BASE_H * scale), ch);
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(scaledH * dpr);
+    canvas.style.width = cw + 'px';
+    canvas.style.height = scaledH + 'px';
+    canvas.style.maxWidth = 'none';
+    const c = canvas.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.scale(scale * dpr, scale * dpr);
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  function drawRBox(x, y, w, h, label, color, alpha) {
+    if (alpha !== undefined) ctx.globalAlpha = alpha;
+    ctx.fillStyle = color + '33';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    const r = 8;
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '13px Pretendard, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lines = label.split('\n');
+    lines.forEach((line, i) => {
+      ctx.fillText(line, x + w/2, y + h/2 + (i - (lines.length-1)/2) * 16);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawArr(x1, y1, x2, y2, color, label) {
+    ctx.strokeStyle = color || '#FF9900';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const angle = Math.atan2(y2-y1, x2-x1);
+    ctx.fillStyle = color || '#FF9900';
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 10*Math.cos(angle-0.4), y2 - 10*Math.sin(angle-0.4));
+    ctx.lineTo(x2 - 10*Math.cos(angle+0.4), y2 - 10*Math.sin(angle+0.4));
+    ctx.closePath(); ctx.fill();
+    if (label) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = '11px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, (x1+x2)/2, (y1+y2)/2 - 8);
+    }
+  }
+
+  function drawSectionLabel(x, y, w, label, color) {
+    ctx.fillStyle = color + '22';
+    ctx.strokeStyle = color + '44';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.strokeRect(x, y, w, 22);
+    ctx.fillRect(x, y, w, 22);
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Pretendard, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x + 8, y + 15);
+  }
+
+  function draw() {
+    resizeCanvas();
+    ctx.clearRect(0, 0, BASE_W, BASE_H);
+
+    // Step 1: CDK → CloudFormation → Lambda
+    if (currentStep >= 1) {
+      drawSectionLabel(15, 5, 180, 'CDK / IaC', '#FF9900');
+      drawRBox(30, 35, 150, 45, 'CDK Stack', '#FF9900');
+      drawRBox(30, 110, 150, 45, 'CloudFormation', '#FF9900');
+      drawRBox(30, 195, 150, 55, 'Lambda\n(Custom Resource)', '#FF9900');
+      drawArr(105, 80, 105, 110, '#FF9900', 'synthesize');
+      drawArr(105, 155, 105, 195, '#FF9900', 'trigger');
+    }
+
+    // Step 2: Lambda → 3 APIs
+    if (currentStep >= 2) {
+      drawSectionLabel(235, 5, 220, 'AWS APIs', '#6C5CE7');
+      drawRBox(250, 35, 195, 45, 'Bedrock API\nListInferenceProfiles', '#6C5CE7');
+      drawRBox(250, 110, 195, 45, 'Price List API\nGetProducts', '#6C5CE7');
+      drawRBox(250, 195, 195, 55, 'CloudWatch API\nPutDashboard', '#6C5CE7');
+      drawArr(180, 210, 250, 57, '#FF9900', '1. 발견');
+      drawArr(180, 222, 250, 132, '#FF9900', '2. 가격');
+      drawArr(180, 234, 250, 222, '#FF9900', '3. 생성');
+    }
+
+    // Step 3: Dashboards
+    if (currentStep >= 3) {
+      drawSectionLabel(520, 5, 200, 'CloudWatch Dashboards', '#2CA02C');
+      drawRBox(535, 40, 175, 55, 'Detail Dashboard\n(드롭다운 선택)', '#2CA02C');
+      drawRBox(535, 120, 175, 55, 'Comparison Dashboard\n(전체 비교)', '#2CA02C');
+      drawArr(445, 210, 535, 67, '#6C5CE7');
+      drawArr(445, 230, 535, 147, '#6C5CE7');
+    }
+
+    // Step 4: Team Apps → Bedrock → CloudWatch
+    if (currentStep >= 4) {
+      drawSectionLabel(15, 290, 700, '팀별 애플리케이션 → Inference Profile ARN으로 호출', '#FF7F0E');
+      drawRBox(40, 320, 140, 40, 'Team A App\n(deptA_penguin)', '#FF7F0E');
+      drawRBox(230, 320, 140, 40, 'Team B App\n(deptB_general)', '#FF7F0E');
+      drawRBox(420, 320, 140, 40, 'Team C App\n(my_team_prod)', '#FF7F0E');
+    }
+
+    if (currentStep >= 5) {
+      drawRBox(220, 400, 140, 40, 'Bedrock', '#6C5CE7');
+      drawRBox(460, 400, 170, 40, 'CloudWatch\nMetrics', '#2CA02C');
+      drawArr(110, 360, 260, 400, '#FF7F0E', 'Profile ARN');
+      drawArr(300, 360, 290, 400, '#FF7F0E', 'Profile ARN');
+      drawArr(490, 360, 320, 400, '#FF7F0E', 'Profile ARN');
+      drawArr(360, 420, 460, 420, '#2CA02C', 'metrics');
+      drawArr(630, 400, 630, 175, '#2CA02C', '');
+    }
+  }
+
+  draw();
+  new ResizeObserver(() => draw()).observe(container);
+
+  window.archAnim = {
+    play: function() {
+      currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        draw();
+        if (currentStep >= MAX_STEP) clearInterval(interval);
+      }, 800);
+    },
+    reset: function() {
+      currentStep = 0;
+      draw();
+    }
+  };
+
+  // Register ↑↓ for step control
+  const slideIndex = 5; // 0-indexed, slide 6
+  setTimeout(() => {
+    if (typeof deck !== 'undefined') {
+      deck.registerSlideAction(slideIndex, {
+        down: () => { if (currentStep < MAX_STEP) { currentStep++; draw(); } },
+        up: () => { if (currentStep > 0) { currentStep--; draw(); } },
+      });
+    }
+  }, 500);
+
+  // Capture canvas at final state for PDF print
+  const printImg = document.getElementById('arch-print-img');
+  let savedStep = 0;
+  window.addEventListener('beforeprint', () => {
+    savedStep = currentStep;
+    currentStep = MAX_STEP;
+    draw();
+    if (printImg) {
+      printImg.src = canvas.toDataURL('image/png');
+    }
+  });
+  window.addEventListener('afterprint', () => {
+    currentStep = savedStep;
+    draw();
+  });
+})();
+</script>
+
+<!-- Deploy Timeline Animation -->
+<script>
+(function() {
+  const timeline = document.getElementById('deploy-timeline');
+  if (!timeline) return;
+  const steps = Array.from(timeline.querySelectorAll('.timeline-step'));
+  const connectors = Array.from(timeline.querySelectorAll('.timeline-connector'));
+  let currentStep = -1; // -1 means nothing active
+
+  function updateTimeline() {
+    steps.forEach((step, i) => {
+      step.classList.remove('done', 'active');
+      if (i < currentStep) step.classList.add('done');
+      else if (i === currentStep) step.classList.add('active');
+    });
+    connectors.forEach((conn, i) => {
+      conn.classList.remove('done');
+      if (i < currentStep) conn.classList.add('done');
+    });
+  }
+
+  window.deployTimeline = {
+    play: function() {
+      currentStep = -1;
+      updateTimeline();
+      let idx = 0;
+      const interval = setInterval(() => {
+        currentStep = idx;
+        updateTimeline();
+        idx++;
+        if (idx > steps.length - 1) clearInterval(interval);
+      }, 600);
+    },
+    reset: function() {
+      currentStep = -1;
+      updateTimeline();
+    },
+    nextStep: function() {
+      if (currentStep < steps.length - 1) { currentStep++; updateTimeline(); }
+    },
+    prevStep: function() {
+      if (currentStep >= 0) { currentStep--; updateTimeline(); }
+    }
+  };
+
+  // Register ↑↓ for step control on slide 7 (index 6)
+  setTimeout(() => {
+    if (typeof deck !== 'undefined') {
+      deck.registerSlideAction(6, {
+        down: () => deployTimeline.nextStep(),
+        up: () => deployTimeline.prevStep(),
+      });
+    }
+  }, 500);
+})();
+</script>
+
+<script>
+  const presenterNotes = {
+    0: '커버 슬라이드. 인사 후 시작합니다.',
+    1: '[0.5min] 오늘 다룰 주요 내용입니다.',
+    2: '[2min] Inference Profile은 Foundation Model 위에 만드는 가상의 엔드포인트입니다.\n같은 모델을 여러 팀이 공유하더라도, 각 팀이 자신의 프로파일 ARN으로 호출하면 CloudWatch에서 팀별 메트릭이 분리됩니다.',
+    3: '[1.5min] 두 가지 유형이 있습니다.\n단일 리전은 개발/테스트, 크로스 리전은 프로덕션에 권장됩니다.',
+    4: '[2min] 여러 팀이 Bedrock을 공유하면 누가 얼마나 사용하는지 파악이 어렵습니다.\n이 솔루션은 CDK 배포 한 번으로 모든 것을 자동화합니다.',
+    5: '[3min] 전체 아키텍처입니다. Play 버튼 또는 ↓키로 단계별 설명.\n1: CDK→CloudFormation→Lambda\n2: Lambda가 3개 API 호출\n3: 2개 대시보드 생성\n4-5: 팀 앱이 Profile ARN으로 호출 → 메트릭 수집',
+    6: '[1.5min] 배포는 cdk deploy 한 줄로 모든 것이 자동화됩니다.',
+    7: '[2min] Detail Dashboard는 Dashboard Variable로 프로파일을 선택합니다.\n한 화면에서 토큰, 비용, 레이턴시, 에러 모든 메트릭을 확인합니다.',
+    8: '[2min] Comparison Dashboard는 전체 프로파일을 비교합니다.\nRUNNING_SUM으로 누적 비용을 시각화하는 것이 핵심입니다.',
+    9: '[2min] 전체 모니터링 지표입니다.\n토큰 & 호출, 레이턴시, 에러 & 스로틀 3개 탭으로 구성.\np90/p99 꼬리 지연이 중요하고, Throttle은 용량 확보 신호입니다.',
+    10: '[1.5min] 비용 계산 메커니즘입니다.\nMetric Math로 실시간 비용 계산, RUNNING_SUM으로 누적 비용.\n가격 조회는 3단계 우선순위로 동작합니다.',
+    11: '[1.5min] 프로파일 생성은 API 한 번 호출이면 됩니다.',
+    12: '[2min] 가장 중요한 부분!\nmodelId에 반드시 Profile ARN을 사용해야 합니다.',
+    13: '[1.5min] CDK 배포 코드입니다.\n최신 모델은 수동 오버라이드로 가격 설정 가능합니다.',
+    14: '[1.5min] 가격 조회는 3단계 우선순위로 동작합니다.',
+    15: '[1.5min] 주의사항입니다.\n가장 중요한 것: Profile ARN 필수!',
+    16: '[1.5min] 핵심 요약과 다음 단계입니다.',
+    17: '마무리. 질문을 받습니다.'
+  };
+  const deck = new SlideFramework({
+    pagination: true,
+    presenterNotes: presenterNotes,
+    onSlideChange: (index, slide) => {}
+  });
+</script>
+</body>
+</html>

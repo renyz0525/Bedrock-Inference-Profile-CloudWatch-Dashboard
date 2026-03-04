@@ -13,14 +13,14 @@ export class BedrockInferenceProfileDashboardStack extends Stack {
     // The Lambda auto-resolves pricing via Price List API first; these are fallback overrides.
     // Prices are per 1K tokens (USD).
     const pricing: PricingConfig = {
-      // Claude Sonnet 4 - not yet in Price List API
-      'dr1ijc0v7yis': { inputTokenPrice: 0.003, outputTokenPrice: 0.015 },
-      // Claude 3.5 Haiku - not yet in Price List API
-      '0abjkxlnnd7w': { inputTokenPrice: 0.0008, outputTokenPrice: 0.004 },
-      // Claude Haiku 4.5 - not yet in Price List API
-      'ed6wepts4w10': { inputTokenPrice: 0.001, outputTokenPrice: 0.005 },
-      // Nova Lite - available in Price List API (auto-resolved), but kept as reference
-      // 'x58goas2lmv2': { inputTokenPrice: 0.00006, outputTokenPrice: 0.00024 },
+      // deptA_penguin_dev - Claude 3 Haiku ($0.25/MTok input, $1.25/MTok output)
+      'w2m9jvmdyfej': { inputTokenPrice: 0.00025, outputTokenPrice: 0.00125 },
+      // deptA_penguin_prod - Claude 3 Haiku
+      '7r61afh3dz6i': { inputTokenPrice: 0.00025, outputTokenPrice: 0.00125 },
+      // deptB_general - Claude 3 Haiku
+      'nfi4dck22hn0': { inputTokenPrice: 0.00025, outputTokenPrice: 0.00125 },
+      // my_team_prod - Claude Sonnet 4.6 ($3/MTok input, $15/MTok output)
+      'sx2q08488787': { inputTokenPrice: 0.003, outputTokenPrice: 0.015 },
     };
 
     new BedrockInferenceProfileDashboard(this, 'Dashboard', {

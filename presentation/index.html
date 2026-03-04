@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedrock Inference Profile 모니터링 대시보드 - Table of Contents</title>
+  <link rel="stylesheet" href="./common/theme.css">
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .toc-container {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem; gap: 1.5rem;
+    }
+    .toc-title { font-size: 2.5rem; color: var(--text-primary); }
+    .block-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; max-width: 800px; width: 100%;
+    }
+    .block-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: .5rem; padding: 1.5rem; text-align: center;
+      text-decoration: none; transition: all var(--transition-fast);
+    }
+    .block-card:hover {
+      border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .block-card h3 { color: var(--text-primary); margin: 0; }
+    .export-toolbar {
+      display: flex; gap: 0.5rem; margin-top: 1.5rem;
+    }
+    .export-toolbar .btn {
+      padding: 0.5rem 1rem; font-size: 0.875rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 0.25rem; color: var(--text-primary);
+      cursor: pointer; transition: all var(--transition-fast);
+    }
+    .export-toolbar .btn:hover {
+      border-color: var(--accent); background: var(--bg-elevated);
+    }
+  </style>
+</head>
+<body>
+<div class="toc-container">
+  <h1 class="toc-title">Bedrock Inference Profile 모니터링 대시보드</h1>
+  <div class="block-grid">
+        <a href="01-dashboard.html" class="block-card">
+      <h3>Bedrock Inference Profile<br>모니터링 대시보드</h3>
+      <p style="color:var(--text-secondary); font-size:0.85rem; margin:8px 0 0;">25분 | 18 슬라이드</p>
+    </a>
+  </div>
+  <div class="export-toolbar">
+    <button class="btn" onclick="ExportUtils.exportPDF({title:'Bedrock Inference Profile 모니터링 대시보드'})">Export PDF</button>
+    <button class="btn" onclick="ExportUtils.downloadZIP()">Download ZIP</button>
+    <button class="btn" onclick="ExportUtils.exportPPTX({title:'Bedrock Inference Profile 모니터링 대시보드'})">Export PPTX</button>
+  </div>
+</div>
+<script src="./common/export-utils.js"></script>
+</body>
+</html>

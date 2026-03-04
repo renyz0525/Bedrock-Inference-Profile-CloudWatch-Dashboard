@@ -6,3 +6,12 @@ dist/
 !jest.config.js
 *.generated.ts
 .cdk.staging/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Large assets
+presentation/common/aws-icons.zip

@@ -36,7 +36,7 @@ MODEL_SOURCE = {
     # 단일 리전 (us-east-1 only)
     "single_region": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-6",
     # 크로스 리전 (US regions)
-    "cross_region": "arn:aws:bedrock:us-east-1:562082723483:inference-profile/us.anthropic.claude-sonnet-4-6",
+    "cross_region": "arn:aws:bedrock:us-east-1:xxxxxxxxxxxxxx:inference-profile/us.anthropic.claude-sonnet-4-6",
 }
 
 
